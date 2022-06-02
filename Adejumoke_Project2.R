@@ -1,0 +1,145 @@
+###Predicting Cholesterol Levels 
+
+### Read the dataset into R Environment.
+
+heart_data <- read.csv("C:\\Users\\Jeddah\\Downloads\\heartattack1.csv")
+head(heart_data)
+str(heart_data)
+attach(heart_data)
+attach(heart_data2)
+library(caret)
+
+## View the summary of the dataset
+summary(heart_data)
+
+## Remove the binary variable output from the dataset.
+heart_data2 <- subset(heart_data, select = -c(output) )
+head(heart_data2)
+colnames(heart_data2)[6] <- "Chol"
+
+##Data Pre-processing
+## There are 14 variables to be used in the analysis with Chol as the outcome variable.
+##Partition dataset into 60: 40 
+
+# use first 303 rows of data
+heart_data2 <- heart_data2[1:303, ]
+# select variables for regression 
+selected.var <- c(1,2,4,5,6,7,9,10,11,12,14,15,17)
+
+
+# partition data
+set.seed(1) 
+
+# set seed for reproducing the partition
+
+train.index <- sample(c(1:303), 182) 
+train.df <- heart_data2[train.index, selected.var]
+valid.df <- heart_data2[-train.index, selected.var]
+
+##Building the regression model using the training partition set
+
+
+heart_lm_model <- lm(Chol ~ ., data = train.df)
+
+stargazer(heart_lm_model, 
+          title = "Predicting Cholesterol Levels",
+          dep.var.caption = "independent variables",
+          notes.label = "Significance Levels", 
+          type = "text", out = "heart.txt")
+summary(heart_lm_model)
+extract_eq( heart_lm_model, wrap = TRUE, use_coefs = TRUE, ital_vars = TRUE)
+
+
+##Looking into the contents of the linear model
+class(heart_lm_model)
+names(heart_lm_model)
+
+##Making predictions on the new set of data 
+install.packages("forecast")
+library(forecast)
+
+heart.lm.pred <- predict(heart_lm_model, valid.df)
+
+##with prediction interval
+predict(heart_lm_model, valid.df, se.fit = T, interval = "prediction", level = 0.95 )  
+
+
+some.residuals <- valid.df$Chol[1:20] - heart.lm.pred[1:20]
+data.frame("Predicted" = heart.lm.pred[1:20], "Actual" = valid.df$Chol[1:20],
+           "Residual" = some.residuals)
+
+#Compute common accuracy measures Of the validation data 
+round(accuracy(heart.lm.pred, valid.df$Chol), 3)
+
+### training data residual plot
+plot(predict(heart_lm_model),                                
+     train.df$Chol,col= "navy blue",
+     xlab = "Predicted Values",
+     ylab = "Observed Values")
+abline(a = 0,                                        
+       b = 1,
+       col = "red",
+       lwd = 2)
+
+## Validation data residual plot
+valid2 <-  lm(Chol ~ ., data = valid.df)
+plot(predict(valid2),                                
+     valid.df$Chol,col= "orange",
+     xlab = "Predicted Values",
+     ylab = "Observed Values")
+abline(a = 0,                                        
+       b = 1,
+       col = "red",
+       lwd = 2)
+
+##Distribution of Residuals 
+all.residuals <- valid.df$Chol - heart.lm.pred
+n <- as.data.frame(all.residuals)
+
+##Find out what percentage of the errors are within the standard deviation 52.041
+se.resid<- length(all.residuals[which(all.residuals > -52.57  & all.residuals < 52.57 )])/121
+se.resid
+
+
+##Distribution of residuals 
+hist(all.residuals, breaks = 25, xlab = "Residuals", main = "Distribution of the Residuals", col = "light blue")
+boxplot(all.residuals, xlab = "Residuals", col = "lightblue")
+##Distribution of Residuals with fitted density line 
+library(ggplot2)
+ggplot(n , aes(all.residuals)) +                        
+  geom_histogram(aes(y = stat(density)),colour="light blue", fill="deepskyblue1" ) +
+  geom_density(col = "red")+
+  ggtitle("Distribution of the Residuals")
+
+
+## Feature Selection - Selecting The subsets of the Predictors
+
+##Exhaustive Search search of best Predictors .
+install.packages("leaps")
+library(leaps)
+ex.search1 <- regsubsets(Chol ~ ., data = train.df, nbest = 1, nvmax = dim(train.df)[2],
+                        method = "exhaustive")
+sum1 <- summary(ex.search1)
+names(sum1)
+sum1$which
+
+## R2 of the features  and plots 
+
+sum$rsq
+sum$adjr2
+sum$bic
+sum$rss
+plot(ex.search1, scale = "adjr2", main = "Best Subsets Using Adjusted R2 measure")
+plot(ex.search1, scale = "bic", main = "Best Subsets Using BIC measure")
+
+##Backward and Forward elimination search of best Predictors 
+heart.lm.step <- step(heart_lm_model, direction = "backward")
+summary(heart.lm.step)  
+heart.lm.step.pred <- predict(heart.lm.step, valid.df)
+accuracy(heart.lm.step.pred, valid.df$Chol)
+
+
+heart.lm.step2 <- step(heart_lm_model, direction = "forward")
+summary(heart.lm.step2)  
+heart.lm.step.pred2 <- predict(heart.lm.step2, valid.df)
+accuracy(heart.lm.step.pred2, valid.df$Chol)
