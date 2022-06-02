@@ -1,4 +1,4 @@
-## machine-learning- Predicting Heart Attacks in Hospital Patients
+## Predicting Heart Attacks in Hospital Patients
 ###Predicting Heart Attack Levels 
 
 ### Read the dataset into R Environment.
@@ -40,6 +40,7 @@ valid.df <- heart_data2[-train.index, selected.var]
 
 
 ###Run the logistic regression
+
 heart.reg <- glm(output ~ ., data = train.df, family = "binomial") 
 options(scipen=999)
 summary(heart.reg)
@@ -59,15 +60,18 @@ pred.reg2 <- predict(heart.reg, train.df, type = "response")
 
 
 ### Predict the Validation data
+
 predict(heart.reg, valid.df)
 pred.reg<- predict(heart.reg, valid.df, type = "response")
 
 
 ###Confusion Matrix
+
 library(pastecs)
 stat.desc(pred.reg)
 
 ### Validation data confusion matrix
+
 con.mat <- table(ifelse(pred.reg > 0.5,1 , 0), valid.df[,14])    
 con.mat
 cfm <- as_tibble(con.mat,.name_repair = ~ c("A", "B", "N"))
@@ -80,6 +84,7 @@ sum(diag(con.mat))/sum(con.mat)
 round(sort(pred.reg, decreasing = T), 3)
 
 ### Training data confusion matrix
+
 con.mat1 <- table(ifelse(pred.reg2 > 0.5,1 , 0), train.df[,14])    
 con.mat1
 colnames(con.mat1) <- c(0, 1)
@@ -97,6 +102,7 @@ round(sort(pred.reg2, decreasing = T), 3)
 library(tibble)  
 
 ###ROC Curve
+
 install.packages("InformationValue")
 library(InformationValue)
 plotROC(valid.df[,14], pred.reg)
@@ -111,6 +117,7 @@ optimalCutoff(valid.df[,14], pred.reg, optimiseFor = "misclasserror",
 
 
 ###ROC CHART
+
 install.packages("ROCR")
 library(ROCR)
 j <-data.frame(actual = valid.df[,14], predictions = tree_ )
@@ -121,6 +128,7 @@ perf
 plot(perf, main="ROC curve", colorize=T)
 
 ###Gains chart
+
 library(e1071)
 library(Rcpp)
 library(gains)
@@ -162,18 +170,21 @@ text(midpoints, heights+0.5, labels=round(heights, 1), cex = 0.8, col = "red")
 library(MASS)
 
 heart.reg1 <- glm(output ~ ., data = train.df, family = "binomial") 
+
 ###STEPWISE
 
 step1.wise <- stepAIC(heart.reg1,  trace=F)  
 step1.wise$anova
 
 ###FORWARD
+
 as.data.frame(heart.reg1)
 step2.forward <- stepAIC(heart.reg1, direction = "forward", trace=T) 
 step2.forward$anova
 names(step1.wise)
 
 ###backward
+
 step3.backward <- stepAIC(heart.reg1, direction= "backward", trace=T) 
 step3.backward$anova
 
@@ -183,18 +194,21 @@ library(bestglm)
 bestglm(heart.reg1, IC = "AIC", family = "binomial")
 
 ###best model rerun
+
 heart.reg2 <- glm(output ~ sex + chest.pain.type + trtbps + chol + thalachh + slope + 
                     caa + thalassemia, data = train.df, family = "binomial")
 
 summary(heart.reg2)
 
 ###Training data 
+
 pred.reg5 <- predict(heart.reg2, train.df, type = "response")
 
 confmatrix <- table(ifelse(pred.reg5 > 0.5,1 , 0), train.df[,14])    
 confmatrix
 
 ###Validation data 
+
 pred.reg6 <- predict(heart.reg2, valid.df, type = "response")
 
 confmatrix1 <- table(ifelse(pred.reg6 > 0.5,1 , 0), valid.df[,14])    
