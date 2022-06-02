@@ -1,4 +1,4 @@
-## Predicting Heart Attacks in Hospital Patients
+## Predicting Heart Attacks in Hospital Patients- LOGISTIC REGRESSION
 ###Predicting Heart Attack Levels 
 
 ### Read the dataset into R Environment.
